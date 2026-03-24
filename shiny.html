@@ -4,29 +4,21 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Shiny Dex – Team Porygon</title>
+  <script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGofC0FWGMSWZH_j2U34PVP-UOms4JX96pHUCpxz5qfm8Ni31yKui2lpXI733zTxVOC2oufQv52uU_/pub?gid=0&single=true&output=csv";
 
- <script>
-   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGofC0FWGMSWZH_j2U34PVP-UOms4JX96pHUCpxz5qfm8Ni31yKui2lpXI733zTxVOC2oufQv52uU_/pub?gid=0&single=true&output=csv";
     let allPokemon = [];
 
     function parseCSV(text) {
-      // ✅ FIX: Remove \r so Windows line endings don't break anything
       const clean = text.replace(/\r/g, "");
       const lines = clean.trim().split("\n");
-
-      // ✅ DEBUG: Show in console how many rows were found
-      console.log("Total rows in CSV (including header):", lines.length);
-      console.log("First row (header):", lines[0]);
-      console.log("Second row (first data row):", lines[1]);
-
+      console.log("Total rows (including header):", lines.length);
+      console.log("Header row:", lines[0]);
+      console.log("First data row:", lines[1]);
       const result = [];
-
-      // Start from i=1 to skip the header row
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (!line) continue; // skip blank lines
-
-        // Split by comma (handles quoted fields)
+        if (!line) continue;
         const cols = [];
         let current = "";
         let inQuotes = false;
@@ -36,10 +28,6 @@
           else { current += ch; }
         }
         cols.push(current.trim());
-
-        // ✅ DEBUG: Show each row's columns
-        console.log(`Row ${i}:`, cols);
-
         if (cols[0]) {
           result.push({
             name    : cols[0] || "",
@@ -50,8 +38,7 @@
           });
         }
       }
-
-      console.log("Total Pokémon parsed:", result.length);
+      console.log("Total Pokemon parsed:", result.length);
       return result;
     }
 
@@ -60,20 +47,16 @@
       try {
         const res  = await fetch(CSV_URL);
         const text = await res.text();
-
-        // ✅ DEBUG: Show raw CSV in console
-        console.log("Raw CSV (first 500 chars):", text.substring(0, 500));
-
+        console.log("Raw CSV (first 300 chars):", text.substring(0, 300));
         allPokemon = parseCSV(text);
-
         if (allPokemon.length === 0) {
-          statusEl.textContent = "⚠️ Sheet loaded but no data found. Check console (F12) for details.";
+          statusEl.textContent = "⚠️ Sheet loaded but no data found. Check F12 console.";
         } else {
           statusEl.textContent = `✅ Loaded ${allPokemon.length} Pokémon from your sheet!`;
         }
       } catch (err) {
-        statusEl.textContent = "❌ Could not load sheet. Check console (F12) for details.";
-        console.error(err);
+        statusEl.textContent = "❌ Fetch failed: " + err.message;
+        console.error("Fetch error:", err);
       }
     }
 
@@ -81,34 +64,25 @@
       const query   = document.getElementById("searchInput").value.trim().toLowerCase();
       const results = document.getElementById("results");
       results.innerHTML = "";
-
       if (!query) {
         results.innerHTML = "<p class='hint'>Type a Pokémon name above and click Search.</p>";
         return;
       }
-
-      const matches = allPokemon.filter(p =>
-        p.name.toLowerCase().includes(query)
-      );
-
+      const matches = allPokemon.filter(p => p.name.toLowerCase().includes(query));
       if (matches.length === 0) {
-        results.innerHTML = `<p class='hint'>No results found for "<strong>${query}</strong>".<br>Check spelling or make sure it's in your sheet.</p>`;
+        results.innerHTML = `<p class='hint'>No results found for "<strong>${query}</strong>".</p>`;
         return;
       }
-
       matches.forEach(pokemon => {
         const obtained = pokemon.obtained === "YES";
-        const card     = document.createElement("div");
+        const card = document.createElement("div");
         card.className = "card " + (obtained ? "card-obtained" : "card-missing");
-
         const imgName = pokemon.name.toLowerCase().replace(/[^a-z0-9]/g, "-");
         const imgSrc  = `https://img.pokemondb.net/artwork/large/${imgName}.jpg`;
-
         card.innerHTML = `
           <div class="card-left">
             <img src="${imgSrc}" alt="${pokemon.name}"
-              onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'"
-            />
+              onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'"/>
           </div>
           <div class="card-right">
             <h2 class="pokemon-name">✨ ${pokemon.name}</h2>
@@ -116,35 +90,22 @@
             <div class="status-badge ${obtained ? 'badge-yes' : 'badge-no'}">
               ${obtained ? "✅ OBTAINED" : "❌ NOT YET"}
             </div>
-            ${obtained && pokemon.owner
-              ? `<p class="owner">👤 Owner: <strong>${pokemon.owner}</strong></p>`
-              : ""}
+            ${obtained && pokemon.owner ? `<p class="owner">👤 Owner: <strong>${pokemon.owner}</strong></p>` : ""}
             ${obtained && pokemon.proof
               ? `<a class="proof-btn" href="${pokemon.proof}" target="_blank">🔗 View Proof</a>`
-              : obtained
-                ? `<span class="proof-btn proof-none">📎 No Proof Added</span>`
-                : ""}
-          </div>
-        `;
+              : obtained ? `<span class="proof-btn proof-none">📎 No Proof Added</span>` : ""}
+          </div>`;
         results.appendChild(card);
       });
     }
 
-    function handleKey(event) {
-      if (event.key === "Enter") searchPokemon();
-    }
-
+    function handleKey(e) { if (e.key === "Enter") searchPokemon(); }
     window.onload = loadSheetData;
-</script>
-
+  </script>
   <style>
-
-    /* ── PAGE ── */
     * { box-sizing: border-box; }
-
     body {
-      margin: 0;
-      min-height: 100vh;
+      margin: 0; min-height: 100vh;
       font-family: 'Segoe UI', sans-serif;
       background-color: #0d0d2b;
       background-image:
@@ -152,234 +113,49 @@
         radial-gradient(circle at 85% 60%, rgba(50,50,255,0.12) 0%, transparent 50%),
         url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='22' stroke='%23ffffff08' stroke-width='2' fill='none'/%3E%3Cline x1='8' y1='30' x2='52' y2='30' stroke='%23ffffff08' stroke-width='2'/%3E%3C/svg%3E");
       background-size: cover, cover, 60px 60px;
-      color: white;
-      padding: 30px 20px 60px;
+      color: white; padding: 30px 20px 60px;
     }
-
-    /* ── BACK BUTTON ── */
-    .back-btn {
-      display: inline-block;
-      margin-bottom: 30px;
-      color: #aaa;
-      text-decoration: none;
-      font-size: 0.9rem;
-      letter-spacing: 1px;
-      transition: color 0.2s;
-    }
+    .back-btn { display: inline-block; margin-bottom: 30px; color: #aaa; text-decoration: none; font-size: 0.9rem; letter-spacing: 1px; transition: color 0.2s; }
     .back-btn:hover { color: #ff4081; }
-
-    /* ── TITLE ── */
-    h1 {
-      text-align: center;
-      font-size: 2.5rem;
-      font-weight: 900;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      background: linear-gradient(135deg, #ff4081, #7c4dff, #00e5ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin: 0 0 8px;
-    }
-
-    .page-subtitle {
-      text-align: center;
-      color: #888;
-      font-size: 0.9rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 30px;
-    }
-
-    /* ── STATUS BAR ── */
-    #status {
-      text-align: center;
-      font-size: 0.85rem;
-      color: #aaa;
-      margin-bottom: 28px;
-      min-height: 20px;
-      letter-spacing: 0.5px;
-    }
-
-    /* ── SEARCH BAR ── */
-    .search-area {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin-bottom: 40px;
-      flex-wrap: wrap;
-    }
-
-    #searchInput {
-      width: 320px;
-      max-width: 100%;
-      padding: 14px 20px;
-      border-radius: 50px;
-      border: 2px solid #333;
-      background: rgba(255,255,255,0.05);
-      color: white;
-      font-size: 1rem;
-      outline: none;
-      transition: border 0.2s;
-    }
-    #searchInput:focus {
-      border-color: #7c4dff;
-    }
+    h1 { text-align: center; font-size: 2.5rem; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; background: linear-gradient(135deg, #ff4081, #7c4dff, #00e5ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0 0 8px; }
+    .page-subtitle { text-align: center; color: #888; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 30px; }
+    #status { text-align: center; font-size: 0.85rem; color: #aaa; margin-bottom: 28px; min-height: 20px; }
+    .search-area { display: flex; justify-content: center; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; }
+    #searchInput { width: 320px; max-width: 100%; padding: 14px 20px; border-radius: 50px; border: 2px solid #333; background: rgba(255,255,255,0.05); color: white; font-size: 1rem; outline: none; transition: border 0.2s; }
+    #searchInput:focus { border-color: #7c4dff; }
     #searchInput::placeholder { color: #555; }
-
-    .search-btn {
-      padding: 14px 28px;
-      border-radius: 50px;
-      background: linear-gradient(135deg, #ff4081, #7c4dff);
-      color: white;
-      font-weight: bold;
-      font-size: 1rem;
-      border: none;
-      cursor: pointer;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .search-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 0 20px rgba(124, 77, 255, 0.6);
-    }
-
-    /* ── RESULTS AREA ── */
-    #results {
-      max-width: 700px;
-      margin: 0 auto;
-    }
-
-    .hint {
-      text-align: center;
-      color: #555;
-      font-size: 0.95rem;
-      line-height: 1.8;
-    }
-
-    /* ── POKEMON CARD ── */
-    .card {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 20px;
-      border: 2px solid transparent;
-      transition: transform 0.2s;
-    }
+    .search-btn { padding: 14px 28px; border-radius: 50px; background: linear-gradient(135deg, #ff4081, #7c4dff); color: white; font-weight: bold; font-size: 1rem; border: none; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: transform 0.2s, box-shadow 0.2s; }
+    .search-btn:hover { transform: translateY(-3px); box-shadow: 0 0 20px rgba(124,77,255,0.6); }
+    #results { max-width: 700px; margin: 0 auto; }
+    .hint { text-align: center; color: #555; font-size: 0.95rem; line-height: 1.8; }
+    .card { display: flex; align-items: center; gap: 24px; border-radius: 20px; padding: 24px; margin-bottom: 20px; border: 2px solid transparent; transition: transform 0.2s; }
     .card:hover { transform: translateY(-4px); }
-
-    .card-obtained {
-      background: rgba(0, 200, 100, 0.07);
-      border-color: rgba(0, 200, 100, 0.3);
-    }
-    .card-missing {
-      background: rgba(255, 50, 50, 0.06);
-      border-color: rgba(255, 50, 50, 0.2);
-    }
-
-    .card-left img {
-      width: 110px;
-      height: 110px;
-      object-fit: contain;
-      filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));
-    }
-
-    .card-right {
-      flex: 1;
-    }
-
-    .pokemon-name {
-      font-size: 1.6rem;
-      font-weight: 900;
-      text-transform: capitalize;
-      margin: 0 0 6px;
-      color: #f0f0f0;
-    }
-
-    .evo-line {
-      font-size: 0.85rem;
-      color: #888;
-      margin: 0 0 12px;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 6px 18px;
-      border-radius: 50px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-    .badge-yes {
-      background: rgba(0, 200, 100, 0.2);
-      color: #00e676;
-      border: 1px solid #00e676;
-    }
-    .badge-no {
-      background: rgba(255, 50, 50, 0.15);
-      color: #ff5252;
-      border: 1px solid #ff5252;
-    }
-
-    .owner {
-      font-size: 0.9rem;
-      color: #ccc;
-      margin: 6px 0;
-    }
-
-    .proof-btn {
-      display: inline-block;
-      margin-top: 8px;
-      padding: 8px 20px;
-      border-radius: 50px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      text-decoration: none;
-      letter-spacing: 0.5px;
-      background: linear-gradient(135deg, #7c4dff, #00e5ff);
-      color: white;
-      transition: opacity 0.2s;
-    }
+    .card-obtained { background: rgba(0,200,100,0.07); border-color: rgba(0,200,100,0.3); }
+    .card-missing { background: rgba(255,50,50,0.06); border-color: rgba(255,50,50,0.2); }
+    .card-left img { width: 110px; height: 110px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.15)); }
+    .card-right { flex: 1; }
+    .pokemon-name { font-size: 1.6rem; font-weight: 900; text-transform: capitalize; margin: 0 0 6px; color: #f0f0f0; }
+    .evo-line { font-size: 0.85rem; color: #888; margin: 0 0 12px; }
+    .status-badge { display: inline-block; padding: 6px 18px; border-radius: 50px; font-size: 0.85rem; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; }
+    .badge-yes { background: rgba(0,200,100,0.2); color: #00e676; border: 1px solid #00e676; }
+    .badge-no { background: rgba(255,50,50,0.15); color: #ff5252; border: 1px solid #ff5252; }
+    .owner { font-size: 0.9rem; color: #ccc; margin: 6px 0; }
+    .proof-btn { display: inline-block; margin-top: 8px; padding: 8px 20px; border-radius: 50px; font-size: 0.85rem; font-weight: bold; text-decoration: none; letter-spacing: 0.5px; background: linear-gradient(135deg, #7c4dff, #00e5ff); color: white; transition: opacity 0.2s; }
     .proof-btn:hover { opacity: 0.8; }
-
-    .proof-none {
-      background: rgba(255,255,255,0.07);
-      color: #666;
-      cursor: default;
-    }
-    .proof-none:hover { opacity: 1; }
-
+    .proof-none { background: rgba(255,255,255,0.07); color: #666; cursor: default; }
   </style>
 </head>
 <body>
-
   <a class="back-btn" href="index.html">← Back to Home</a>
-
   <h1>✨ Shiny Dex</h1>
   <p class="page-subtitle">Team Porygon — Live Sheet Data</p>
-
-  <!-- Loading status message -->
   <div id="status">⏳ Loading Pokémon data from your sheet...</div>
-
-  <!-- Search bar -->
   <div class="search-area">
-    <input
-      type="text"
-      id="searchInput"
-      placeholder="Type a Pokémon name... (e.g. pikachu)"
-      onkeydown="handleKey(event)"
-    />
+    <input type="text" id="searchInput" placeholder="Type a Pokémon name... (e.g. pikachu)" onkeydown="handleKey(event)"/>
     <button class="search-btn" onclick="searchPokemon()">🔍 Search</button>
   </div>
-
-  <!-- Results appear here -->
   <div id="results">
     <p class="hint">Type a Pokémon name above and press Search.</p>
   </div>
-
 </body>
 </html>
