@@ -6,9 +6,7 @@
   <title>Shiny Dex – Team Porygon</title>
 
  <script>
-    const RAW_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGofC0FWGMSWZH_j2U34PVP-UOms4JX96pHUCpxz5qfm8Ni31yKui2lpXI733zTxVOC2oufQv52uU_/pub?gid=0&single=true&output=csv";
-const CSV_URL = `https://api.allorigins.win/raw?url=${encodeURIComponent(RAW_CSV)}`;
-
+   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGofC0FWGMSWZH_j2U34PVP-UOms4JX96pHUCpxz5qfm8Ni31yKui2lpXI733zTxVOC2oufQv52uU_/pub?gid=0&single=true&output=csv";
     let allPokemon = [];
 
     function parseCSV(text) {
